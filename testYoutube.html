@@ -1,0 +1,131 @@
+<script src="https://apis.google.com/js/api.js"></script>
+<script>
+  function authenticate() {
+    return gapi.auth2.getAuthInstance()
+        .signIn({scope: "https://www.googleapis.com/auth/youtube.force-ssl"})
+        .then(function() { console.log("Sign-in successful"); },
+              function(err) { console.error("Error signing in", err); });
+  }
+  function loadClient() {
+    gapi.client.setApiKey("AIzaSyC8uiBurEM-Lkl769hViV2PzIQVwjdow74");
+    return gapi.client.load("https://www.googleapis.com/discovery/v1/apis/youtube/v3/rest")
+        .then(function() { console.log("GAPI client loaded for API"); },
+              function(err) { console.error("Error loading GAPI client for API", err); });
+  }
+  const videoId = 'xQBdAtnXHxg'
+  async function execute() {
+    const response = await gapi.client.youtube.captions.list({
+      "part": "snippet",
+      videoId
+    });
+    const captions = await gapi.client.youtube.captions.download({id: 'RbObwWPbe-xLR5io4j421ntJjy2NWtOp-o0h-V1qMlU='})
+    const lines = captions.body.split('\n');
+    const stackCaptions = [];
+    const strCaptions = ''
+    for(let i = 0; i < lines.length; i+=3) {
+      let lineTime = lines[i];
+      let lineWords = lines[i+1];
+      let lineEmpty = lines[i+2];
+      if(lineTime){
+        let startTimeCaptionString = lineTime.split(',')[0];
+        [h, m, s] = startTimeCaptionString.split(':');
+        const starTime = parseInt(h)*60*60 + parseInt(m)*60+parseInt(s)
+        addVideoNavigator(lineWords, starTime)
+        strCaptions += lineWords;
+        stackCaptions.push({starTime, text: lineWords})
+      }
+    }
+    console.log(stackCaptions);
+    return {strCaptions, stackCaptions};
+  }
+
+  gapi.load("client:auth2", function() {
+    gapi.auth2.init({client_id: "667688406344-ru4f77s993vla0vh4teqnc649ml16tjl.apps.googleusercontent.com"});
+  });
+// class youtubeNavigator
+  let player;
+  let body;
+  function addVideoNavigator(text, time) {
+    const button = document.createElement("button");
+    button.innerHTML = text;
+    body.appendChild(button);
+    button.addEventListener ("click", function() {
+      player.seekTo(time, true);
+    });
+  }
+  
+  function addYTLibrary(){
+    // Load the IFrame Player API code asynchronously.
+    const tag = document.createElement('script');
+    tag.src = "https://www.youtube.com/player_api";
+    const firstScriptTag = document.getElementsByTagName('script')[0];
+    firstScriptTag.parentNode.insertBefore(tag, firstScriptTag);
+
+  }
+  addYTLibrary();
+  function onYouTubePlayerAPIReady() {
+    player = new YT.Player('ytplayer', {
+      height: '360',
+      width: '640',
+      videoId
+    });
+    body = document.getElementsByTagName("body")[0];
+  }
+
+    
+    
+    
+    
+    
+    
+  async function myFunctionGet() {
+    const xhr = new XMLHttpRequest();
+    // const apiKey = "k60oygFbTpKBBdhJZYfQdW3ed9MJwlSDq_Cra7J0e9ze";
+    const apiKey = 'YXBpa2V5Oms2MG95Z0ZiVHBLQkJkaEpaWWZRZFczZWQ5TUp3bFNEcV9DcmE3SjBlOXpl'
+    // const address = 'https://gateway.watsonplatform.net/natural-language-understanding/api/v1/analyze?version=2019-07-12'
+    const address = 'https://gateway.watsonplatform.net/natural-language-understanding/api/v1/analyze?version=2019-07-12&url=www.ibm.com&features=keywords,entities&entities.emotion=true&entities.sentiment=true&keywords.emotion=true&keywords.sentiment=true'
+    // "https://gateway.watsonplatform.net/natural-language-understanding/api/v1/analyze?version=2019-07-12"
+    xhr.onreadystatechange = function () {
+        if (this.readyState != 4) return;
+
+        if (this.status == 200) {
+            var data = JSON.parse(this.responseText);
+            console.log(data);
+            // we get the returned data
+        }
+
+        // end of state change: it can be after some time (async)
+    };
+
+    const proxyurl = "https://cors-anywhere.herokuapp.com/";
+    // xhr.withCredentials = true;
+
+    xhr.open("GET",proxyurl+address, true);
+    xhr.setRequestHeader('Content-Type', 'application/json');
+    xhr.setRequestHeader('Authorization', 'Basic ' + apiKey);
+
+    const r = await xhr.send(JSON.stringify());
+
+    // const r = await xhr.send(JSON.stringify(
+    // {
+    //     'version': '2019-07-12',
+    //     'url': 'www.ibm.com',
+    //     'features': 'keywords,entities',
+    //     'entities.emotion': true,
+    //     'entities.sentiment': true,
+    //     'keywords.emotion': true,
+    //     'keywords.sentiment': true
+    // }));
+
+    console.log('r ', r);
+  }
+
+</script>
+
+<button onclick="addVideoNavigator('hey', 77)">Try it</button>
+<button onclick="myFunctionGet()">Go 3s!</button>
+
+<div id="ytplayer"></div>
+<br><br>
+<button onclick="authenticate().then(loadClient)">authorize and load</button>
+<button onclick="execute()">execute</button>
